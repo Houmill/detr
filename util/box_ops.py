@@ -11,7 +11,11 @@ def box_cxcywh_to_xyxy(x):
     b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
          (x_c + 0.5 * w), (y_c + 0.5 * h)]
     return torch.stack(b, dim=-1)
-
+#def box_cxcywh_to_xyxy(x):
+ #   x_c, y_c, w, h = x.unbind(-1)
+  #  b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
+   #      (x_c + 0.5 * w), (h)]
+    #return torch.stack(b, dim=-1)
 
 def box_xyxy_to_cxcywh(x):
     x0, y0, x1, y1 = x.unbind(-1)
@@ -44,7 +48,7 @@ def generalized_box_iou(boxes1, boxes2):
     The boxes should be in [x0, y0, x1, y1] format
 
     Returns a [N, M] pairwise matrix, where N = len(boxes1)
-    and M = len(boxes2)
+    and M = len(boxes2
     """
     # degenerate boxes gives inf / nan results
     # so do an early check

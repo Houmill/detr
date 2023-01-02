@@ -10,8 +10,8 @@ from typing import Iterable
 import torch
 
 import util.misc as utils
-from datasets.coco_eval import CocoEvaluator
-from datasets.panoptic_eval import PanopticEvaluator
+#from datasets.coco_eval import CocoEvaluator
+#from datasets.panoptic_eval import PanopticEvaluator
 
 
 def train_one_epoch(
@@ -98,7 +98,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
 
     iou_types = tuple(k for k in ("segm", "bbox") if k in postprocessors.keys())
     # coco_evaluator = CocoEvaluator(base_ds, iou_types)
-    coco_evaluator = CocoEvaluator(base_ds, iou_types) if base_ds else None
+    coco_evaluator = None # CocoEvaluator(base_ds, iou_types) if base_ds else None
     # coco_evaluator.coco_eval[iou_types[0]].params.iouThrs = [0, 0.1, 0.5, 0.75]
 
     panoptic_evaluator = None
@@ -109,6 +109,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
             output_dir=os.path.join(output_dir, "panoptic_eval"),
         )
 
+    #print("but what is dataloader? ", data_loader, type(data_loader))
     for samples, _targets, image_id, *_ in metric_logger.log_every(data_loader, 10, header):
         samples = samples.to(device)
         # targets = [{k: v.to(device) for k, v in t.items()} for t in targets]

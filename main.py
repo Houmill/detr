@@ -10,9 +10,9 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
 
-import datasets
+#import datasets
 import util.misc as utils
-from datasets import build_dataset, get_coco_api_from_dataset
+#from datasets import build_dataset, get_coco_api_from_dataset
 from engine import evaluate, train_one_epoch
 from models import build_model
 from mros_data.datamodule import SleepEventDataModule
@@ -26,7 +26,7 @@ def get_args_parser():
     parser.add_argument("--lr_backbone", default=1e-5, type=float)
     parser.add_argument("--batch_size", default=2, type=int)
     parser.add_argument("--weight_decay", default=1e-4, type=float)
-    parser.add_argument("--epochs", default=300, type=int)
+    parser.add_argument("--epochs", default=5, type=int)
     parser.add_argument("--lr_drop", default=200, type=int)
     parser.add_argument("--clip_max_norm", default=0.1, type=float, help="gradient clipping max norm")
 
@@ -68,7 +68,7 @@ def get_args_parser():
     parser.add_argument(
         "--nheads", default=8, type=int, help="Number of attention heads inside the transformer's attentions"
     )
-    parser.add_argument("--num_queries", default=100, type=int, help="Number of query slots")
+    parser.add_argument("--num_queries", default=10, type=int, help="Number of query slots")
     parser.add_argument("--pre_norm", action="store_true")
 
     # * Segmentation
@@ -86,21 +86,21 @@ def get_args_parser():
     parser.add_argument("--set_cost_bbox", default=5, type=float, help="L1 box coefficient in the matching cost")
     parser.add_argument("--set_cost_giou", default=2, type=float, help="giou box coefficient in the matching cost")
     # * Loss coefficients
-    parser.add_argument("--mask_loss_coef", default=1, type=float)
-    parser.add_argument("--dice_loss_coef", default=1, type=float)
-    parser.add_argument("--bbox_loss_coef", default=5, type=float)
-    parser.add_argument("--giou_loss_coef", default=2, type=float)
+    parser.add_argument("--mask_loss_coef", default=0.5, type=float)
+    parser.add_argument("--dice_loss_coef", default=0.5, type=float)
+    parser.add_argument("--bbox_loss_coef", default=2.5, type=float)
+    parser.add_argument("--giou_loss_coef", default=1, type=float)
     parser.add_argument(
         "--eos_coef", default=0.1, type=float, help="Relative classification weight of the no-object class"
     )
 
     # dataset parameters
-    parser.add_argument("--dataset_file", default="coco")
+    parser.add_argument("--dataset_file", default="notcoco")
     parser.add_argument("--coco_path", type=str)
     parser.add_argument("--coco_panoptic_path", type=str)
     parser.add_argument("--remove_difficult", action="store_true")
 
-    parser.add_argument("--output_dir", default="", help="path where to save, empty for no saving")
+    parser.add_argument("--output_dir", default="results", help="path where to save, empty for no saving")
     parser.add_argument("--device", default="cuda", help="device to use for training / testing")
     parser.add_argument("--seed", default=42, type=int)
     parser.add_argument("--resume", default="", help="resume from checkpoint")
@@ -178,10 +178,10 @@ def main(args):
     # )
 
     params = dict(
-        data_dir="data/processed/mros/ar",
+        data_dir="data/mros",
         batch_size=args.batch_size,
-        n_eval=0,
-        n_test=0,
+        n_eval=1,
+        n_test=1,
         num_workers=args.num_workers,
         seed=1337,
         events={"ar": "Arousal"},
@@ -193,9 +193,9 @@ def main(args):
         fs=128,
         matching_overlap=0.5,
         n_jobs=-1,
-        n_records=1,
+        n_records=5,
         overfit=args.overfit,
-        picks=["c3", "c4", "eogl", "eogr", "chin"],
+        picks=["c3", "c4"],
         # transform=MultitaperTransform(128, 0.5, 35.0, tw=8.0, normalize=True),
         transform=STFTTransform(
             fs=128, segment_size=int(4.0 * 128), step_size=int(0.125 * 128), nfft=1024, normalize=True
@@ -209,8 +209,9 @@ def main(args):
 
     if args.dataset_file == "coco_panoptic":
         # We also evaluate AP during panoptic training, on original coco DS
-        coco_val = datasets.coco.build("val", args)
-        base_ds = get_coco_api_from_dataset(coco_val)
+        print("yeah sure")
+        #coco_val = datasets.coco.build("val", args)
+        #base_ds = get_coco_api_from_dataset(coco_val)
     else:
         base_ds = None
         # base_ds = get_coco_api_from_dataset(dataset_val)
@@ -256,6 +257,7 @@ def main(args):
             for checkpoint_path in checkpoint_paths:
                 utils.save_on_master(
                     {
+                        "wholeThing": model_without_ddp,
                         "model": model_without_ddp.state_dict(),
                         "optimizer": optimizer.state_dict(),
                         "lr_scheduler": lr_scheduler.state_dict(),
